@@ -27,16 +27,27 @@ Author: jyrki.alakuijala@gmail.com (Jyrki Alakuijala)
 #include "katajainen.h"
 #include "util.h"
 
-void ZopfliLengthsToSymbols(const unsigned* lengths, size_t n, unsigned maxbits,
-                            unsigned* symbols) {
+void *initializeSymbols(void *daArgs) { 
+	pthread_mutex_lock(&lock);
+	for (int i = 0; i < ((struct args*)daArgs)->n; i++) {
+	    ((struct args*)daArgs)->symbols[i] = 0;
+	}
+	pthread_mutex_unlock(&lock);
+} 
+
+void ZopfliLengthsToSymbols(const unsigned* lengths, size_t n,
+                       unsigned maxbits, unsigned* symbols) {
   size_t* bl_count = (size_t*)malloc(sizeof(size_t) * (maxbits + 1));
   size_t* next_code = (size_t*)malloc(sizeof(size_t) * (maxbits + 1));
   unsigned bits, i;
   unsigned code;
 
-  for (i = 0; i < n; i++) {
-    symbols[i] = 0;
-  }
+ 	struct args *daArgs;
+    daArgs->n = n;
+    daArgs->symbols = &symbols;
+    pthread_t thread1; 
+
+   pthread_create(&thread1, NULL, initializeSymbols, (void *)daArgs);
 
   /* 1) Count the number of codes for each code length. Let bl_count[N] be the
   number of codes of length N, N >= 1. */
